@@ -1,0 +1,28 @@
+@use 'base';
+
+
+.scene-tree {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 600px;
+  background-color: base.$colors-elevation2;
+  overflow-y: auto;
+
+  z-index: 10;
+}
+
+.tree-node {
+  color: base.$colors-highlight2;
+  padding-left: 10px;
+  text-align: left;
+
+  &>h3 {
+    color: base.$colors-highlight3;
+  }
+}
+
+.tree-mesh {
+  color: base.$colors-highlight2;
+}
