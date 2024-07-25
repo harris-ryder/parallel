@@ -1,9 +1,8 @@
-import React, { useState, useContext, useEffect } from 'react'
+import React, { useState, useContext, useEffect, useMemo } from 'react'
 import { returnArrayOfGeometries, loadPublicGLTFFile } from '../utils/fileLoader'
-import { addToScene } from '../script'
+import { addToScene, returnScene } from '../script'
 
 const SceneContext = React.createContext()
-
 
 
 export function useScene() {
@@ -13,14 +12,16 @@ export function useScene() {
 export function SceneProvider({ children }) {
 
 
-  // STATE
   const [models, setModels] = useState([])
+  const [scene, setScene] = useState([])
 
 
-  // CONTEXT VALUES & FUNCTIONS
-  const values = { handleFile, loadExampleModel, models }
+  const sceneCopy = useMemo(() => {
+    return { ...scene };
+  }, [scene])
 
-  // FUNCTIONS
+  const values = { handleFile, loadExampleModel, models, setModels, sceneCopy, setScene }
+
   async function handleFile(e) {
     let newModels = await returnArrayOfGeometries(e)
     setModels((prevModels) => [...newModels, ...prevModels])
@@ -35,15 +36,27 @@ export function SceneProvider({ children }) {
     }
   }
 
-  // USE EFFECT
+  function returnShallowModel() {
+    return [...models]
+  }
+
   useEffect(() => {
+
     for (const model of models) {
+      console.log("checking at ui", model)
       if (!model.inScene) addToScene(model)
       model.inScene = true
 
     }
 
+    if (models.length > 0) setScene(returnScene())
+
   }, [models])
+
+
+  useEffect(() => {
+    console.log("new scene: ", scene)
+  }, [scene])
 
 
   return (

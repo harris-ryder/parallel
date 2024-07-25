@@ -2,20 +2,22 @@
 
 
 .scene-tree {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 400px;
-  height: 600px;
-  background-color: base.$colors-elevation2;
-  overflow-y: auto;
+  display: flex;
 
-  z-index: 10;
+
+  background-color: base.$colors-elevation2;
+  max-height: 50%;
+  overflow-y: auto;
+  padding-top: 8px;
+  border: 1px solid green;
+
 }
+
+
 
 .tree-node {
   color: base.$colors-highlight2;
-  padding-left: 10px;
+  padding-left: 12px;
   text-align: left;
 
   &>h3 {
@@ -25,4 +27,43 @@
 
 .tree-mesh {
   color: base.$colors-highlight2;
+}
+
+.scene-header {
+  padding: 8px;
+  text-align: left;
+  border-top-right-radius: base.$radii-lg;
+  border-top-left-radius: base.$radii-lg;
+  background: base.$colors-elevation2;
+
+}
+
+.scene-tree-settings {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 20px;
+  height: 100%;
+}
+
+
+.vis-btn {
+  width: 1lh;
+  background-color: base.$colors-highlight3;
+  border-radius: 1000px;
+  line-height: 1.5;
+  height: 1lh;
+  border: 4px solid base.$colors-elevation2;
+}
+
+.vis-btn.hide {
+
+  background-color: base.$colors-highlight1;
+}
+
+.scene-tree-names {
+  flex: 1 1 0;
+  overflow-x: scroll;
+  border: 1px solid red;
+  height: 100%;
 }

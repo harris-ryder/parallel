@@ -1,18 +1,35 @@
 import { useRef, useEffect, Suspense, useState, useContext } from 'react';
 import { useScene } from '../context/SceneContext';
 import { TreeNode } from './TreeNode';
+import { TreeNodeSetting } from './TreeNodeSetting';
 
 export function SceneTree() {
-  const { handleFile, loadExampleModel, models } = useScene();
-
-  if (models.length > 0) console.log("hi: ", models[0].scene.children);
-
+  const { handleFile, loadExampleModel, models, sceneCopy } = useScene();
   return (
-    <div className='scene-tree'>
-      {models.map((model, index) => {
-        console.log("working", model.scene);
-        return <TreeNode key={index} scene={model.scene.children} name={model.scene.name} />;
-      })}
-    </div>
+    <>
+      <h3 className='panel-header scene-header'>Scene</h3>
+      <div className='scene-tree'>
+        <div className='scene-tree-names'>
+          {sceneCopy && Array.isArray(sceneCopy.children) && sceneCopy.children.map((node, index) => {
+            if (node.isMesh) {
+              return <div className='tree-mesh'>node.name</div>;
+            } else if (node.type === "Group" || node.type === "Object3D") {
+              return <TreeNode scene={node} />
+            }
+          })}
+        </div>
+
+        <div className='scene-tree-settings'>
+
+          {sceneCopy && Array.isArray(sceneCopy.children) && sceneCopy.children.map((node, index) => {
+            if (node.isMesh) {
+              return <div className='vis-btn'>node.name</div>;
+            } else if (node.type === "Group" || node.type === "Object3D") {
+              return <TreeNodeSetting scene={node} />
+            }
+          })}
+        </div>
+      </div>
+    </>
   );
 }

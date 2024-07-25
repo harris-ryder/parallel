@@ -1,8 +1,12 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Quick rundown:
 
-Currently, two official plugins are available:
+script.js holds all the three.js
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+fileLoader.js is basically a big function, it takes the locally loaded file and returns an array of scenes that can be 
+used in threejs
+
+SceneContext holds all the UI brains, the state variable models inside of it holds all the scene data thats passed into threejs
+and the UI
+
+SceneTree takes models and creates a tree of the model structure using TreeNode.  

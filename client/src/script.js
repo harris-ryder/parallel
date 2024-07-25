@@ -9,19 +9,7 @@ import { DragControls } from 'three/addons/controls/DragControls.js';
  */
 
 
-const gui = new GUI({
-  width: 300,
-  title: 'Nice debug UI',
-  closeFolders: false
-})
-// gui.close()
-// gui.hide()
-window.addEventListener('keydown', (event) => {
-  if (event.key == 'h')
-    gui.show(gui._hidden)
-})
-
-const debugObject = {}
+const cubeTextureLoader = new THREE.CubeTextureLoader()
 
 /**
  * Base
@@ -31,7 +19,7 @@ const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const scene = new THREE.Scene()
-
+scene.background = new THREE.Color(0xffffff);
 
 // AXIS HELPER
 const axesHelper = new THREE.AxesHelper(5);
@@ -43,59 +31,20 @@ scene.add(axesHelper);
 const light = new THREE.AmbientLight(0x404040, 20);
 scene.add(light);
 
+// Environment
+
+const environmentMap = cubeTextureLoader.load([
+  '/environmentMaps/0/px.png',
+  '/environmentMaps/0/nx.png',
+  '/environmentMaps/0/py.png',
+  '/environmentMaps/0/ny.png',
+  '/environmentMaps/0/pz.png',
+  '/environmentMaps/0/nz.png'
+])
+
+scene.environment = environmentMap
 
 
-/**
- * Object
- */
-debugObject.color = '#a778d8'
-
-const geometry = new THREE.BoxGeometry(1, 1, 1, 2, 2, 2)
-const material = new THREE.MeshBasicMaterial({ color: '#a778d8', wireframe: true })
-const mesh = new THREE.Mesh(geometry, material)
-//scene.add(mesh)
-
-const cubeTweaks = gui.addFolder('Awesome cube')
-// cubeTweaks.close()
-
-cubeTweaks
-  .add(mesh.position, 'y')
-  .min(- 3)
-  .max(3)
-  .step(0.01)
-  .name('elevation')
-
-cubeTweaks
-  .add(mesh, 'visible')
-
-cubeTweaks
-  .add(material, 'wireframe')
-
-cubeTweaks
-  .addColor(debugObject, 'color')
-  .onChange(() => {
-    material.color.set(debugObject.color)
-  })
-
-debugObject.spin = () => {
-  gsap.to(mesh.rotation, { duration: 1, y: mesh.rotation.y + Math.PI * 2 })
-}
-cubeTweaks
-  .add(debugObject, 'spin')
-
-debugObject.subdivision = 2
-cubeTweaks
-  .add(debugObject, 'subdivision')
-  .min(1)
-  .max(20)
-  .step(1)
-  .onFinishChange(() => {
-    mesh.geometry.dispose()
-    mesh.geometry = new THREE.BoxGeometry(
-      1, 1, 1,
-      debugObject.subdivision, debugObject.subdivision, debugObject.subdivision
-    )
-  })
 
 /**
  * Sizes
@@ -153,18 +102,14 @@ export function updateNode(node) {
 }
 
 
+// REACT INTERACTIONS
+
+export function returnScene() {
+  return scene
+}
+
 export function addToScene(object) {
-  console.log("hello", object.scene)
-  if (object.type === 'stl') {
-    const material = new THREE.MeshBasicMaterial({ color: '#a778d8', wireframe: true });
-    let mesh = new THREE.Mesh(object.scene, material);
-    mesh.position.set(0, 20, 0);
-    scene.add(mesh);
-    object.scene = mesh
-    object.type = "three"
-  } else {
-    addGroup(object.scene, scene);
-  }
+  addGroup(object.scene, scene);
 }
 
 
@@ -176,13 +121,14 @@ function addGroup(object, parent) {
     } else {
       addGroup(child, group);
     }
-
   });
 
   parent.add(group)
+
 }
 
-function addMesh(object) {
+
+function addMesh(object, group) {
 
 
   if (object && object.isMesh) {
@@ -200,9 +146,13 @@ function addMesh(object) {
     newMesh.quaternion.copy(worldRotation);
     newMesh.scale.copy(worldScale);
 
-    scene.add(newMesh);
+    newMesh.name = "no name"
+    if (object.name !== "") newMesh.name = object.name
+
+    group.add(newMesh);
   }
 }
+
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime()
@@ -212,6 +162,7 @@ const tick = () => {
 
   // Render
   renderer.render(scene, camera)
+
 
   // Call tick again on the next frame
   window.requestAnimationFrame(tick)

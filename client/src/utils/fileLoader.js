@@ -61,7 +61,7 @@ function loadGeometry(file, type, name, buffers) {
     const reader = new FileReader();
 
     switch (type) {
-      case 'stl':
+      case 'stl blocked for now': //ignoring stls until i add functionality later
         reader.onload = (event) => {
           try {
             const geometry = new STLLoader().parse(event.target.result);

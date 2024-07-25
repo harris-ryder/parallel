@@ -1,0 +1,19 @@
+@use 'base';
+
+
+.editor {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  border-radius: base.$radii-lg;
+  background-color: base.$colors-elevation1;
+  z-index: 10;
+
+  border: 1px solid base.$colors-elevation2;
+
+  box-shadow: base.$shadows-level1;
+
+  width: 300px;
+  padding: 12px 0px;
+}
