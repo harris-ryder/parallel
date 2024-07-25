@@ -1,0 +1,19 @@
+@use 'base';
+
+.properties-header {
+  padding: 8px;
+  padding-top: 2px;
+  text-align: left;
+  background: base.$colors-elevation2;
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    height: 1px;
+    left: 8px;
+    right: 8px;
+    background-color: base.$colors-highlight2;
+  }
+}

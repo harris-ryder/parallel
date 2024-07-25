@@ -2,35 +2,67 @@
 
 
 .scene-tree {
-  display: flex;
-
-
   background-color: base.$colors-elevation2;
-  max-height: 50%;
   overflow-y: auto;
-  padding-top: 8px;
-  border: 1px solid green;
-
+  padding: 0px;
+  height: 100%;
 }
 
+.scene-tree-drag {
+  overflow: hidden;
+  resize: vertical;
+  max-height: 400px;
+  padding-bottom: 18px;
+  background-color: base.$colors-elevation2;
+}
+
+::-webkit-resizer {
+  background: base.$colors-highlight2;
+  border: 3px solid base.$colors-elevation2;
+  border-radius: 100px;
+}
+
+.scene-tree-scroll {
+  display: flex;
+  background-color: base.$colors-elevation2;
+  border-radius: base.$radii-lg;
+
+
+}
 
 
 .tree-node {
   color: base.$colors-highlight2;
   padding-left: 12px;
   text-align: left;
+  position: relative;
+
 
   &>h3 {
     color: base.$colors-highlight3;
   }
 }
 
+.tree-node:has(*) {
+  &::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    bottom: 8px;
+    left: 12px;
+    width: 1px;
+    background-color: base.$colors-highlight1;
+  }
+}
+
 .tree-mesh {
   color: base.$colors-highlight2;
+  padding-left: 12px;
 }
 
 .scene-header {
   padding: 8px;
+  padding-bottom: 2px;
   text-align: left;
   border-top-right-radius: base.$radii-lg;
   border-top-left-radius: base.$radii-lg;
@@ -49,21 +81,21 @@
 
 .vis-btn {
   width: 1lh;
-  background-color: base.$colors-highlight3;
   border-radius: 1000px;
   line-height: 1.5;
   height: 1lh;
   border: 4px solid base.$colors-elevation2;
+  background-color: base.$colors-highlight2;
+
 }
 
 .vis-btn.hide {
 
-  background-color: base.$colors-highlight1;
+  background-color: base.$colors-elevation3;
 }
 
 .scene-tree-names {
   flex: 1 1 0;
   overflow-x: scroll;
-  border: 1px solid red;
   height: 100%;
 }
