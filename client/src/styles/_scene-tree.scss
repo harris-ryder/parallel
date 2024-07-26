@@ -39,7 +39,12 @@
 
 
   &>h3 {
-    color: base.$colors-highlight3;
+    color: base.$colors-highlight2;
+  }
+
+
+  &>h3.active-node {
+    color: white;
   }
 }
 
@@ -48,10 +53,19 @@
     content: "";
     position: absolute;
     top: 20px;
-    bottom: 8px;
-    left: 12px;
+    bottom: 4px;
+    left: 16px;
     width: 1px;
     background-color: base.$colors-highlight1;
+
+  }
+
+}
+
+.tree-node.active-node:has(*) {
+  &::before {
+    background-color: base.$colors-highlight3;
+
   }
 }
 
@@ -98,4 +112,8 @@
   flex: 1 1 0;
   overflow-x: scroll;
   height: 100%;
+}
+
+.active-node {
+  color: white;
 }

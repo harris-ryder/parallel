@@ -14,13 +14,14 @@ export function SceneProvider({ children }) {
 
   const [models, setModels] = useState([])
   const [scene, setScene] = useState([])
+  const [selectedNode, setSelectedNode] = useState(null)
 
 
   const sceneCopy = useMemo(() => {
     return { ...scene };
   }, [scene])
 
-  const values = { handleFile, loadExampleModel, models, setModels, sceneCopy, setScene }
+  const values = { handleFile, loadExampleModel, models, setModels, sceneCopy, setScene, selectedNode, setSelectedNode }
 
   async function handleFile(e) {
     let newModels = await returnArrayOfGeometries(e)
