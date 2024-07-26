@@ -8,6 +8,18 @@ export function Properties() {
 
   const { selectedNode } = useScene();
   const [color, setColor] = useState('#7b1288');
+  const [sliderValue, setSliderValue] = useState(1)
+
+
+  function handleSliderValue(e) {
+    setSliderValue(e.target.value)
+    if (selectedNode) selectedNode.scale.set(e.target.value, e.target.value, e.target.value)
+  }
+
+  useEffect(() => {
+    if (selectedNode) setSliderValue(selectedNode.scale.x)
+  }, [selectedNode])
+
   useEffect(() => {
     if (selectedNode) selectedNode.material = new THREE.MeshStandardMaterial({ color: color });
   }, [color])
@@ -55,8 +67,8 @@ export function Properties() {
 
         <div className='scale-selector'>
           <p>Scale</p>
-          <input type="range" min="0" max="100" className="scale-slider" value="57" />
-          <div className='pos-val scale-val'><p>2</p></div>
+          <input type="range" min="0" max="5" step="0.01" className="scale-slider" value={sliderValue} onChange={handleSliderValue} />
+          <div className='pos-val scale-val'><p>{Math.round(sliderValue * 1000) / 1000}</p></div>
         </div>
 
       </div>
