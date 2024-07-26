@@ -1,14 +1,14 @@
 import React from 'react';
 import { useScene } from '../context/SceneContext';
+import { highlight } from '../script.js'
 
 export function TreeNode({ scene }) {
   const { setModels, sceneCopy, setScene, setSelectedNode, selectedNode } = useScene();
 
   function toggleVisible(node) {
-    console.log("scene called", node)
-    //node.visible = !node.visible;  // Toggle visibility
     setSelectedNode(node)
-    //setScene(sceneCopy)
+    highlight(node)
+
   }
 
   //<h3 className={scene === selectedNode ? "active-node" : ""} onClick={() => toggleVisible(scene)}>{scene.name || 'Group'} </h3>

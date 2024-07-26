@@ -4,6 +4,13 @@ import gsap from 'gsap'
 import GUI from 'lil-gui'
 import { MeshStandardMaterial } from 'three';
 import { DragControls } from 'three/addons/controls/DragControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
+import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader.js'
+
 /**
  * Debug
  */
@@ -28,7 +35,7 @@ scene.add(axesHelper);
 
 // Light
 
-const light = new THREE.AmbientLight(0x404040, 20);
+const light = new THREE.AmbientLight(0x404040, 5);
 scene.add(light);
 
 // Environment
@@ -43,6 +50,9 @@ const environmentMap = cubeTextureLoader.load([
 ])
 
 scene.environment = environmentMap
+scene.environmentIntensity = 3
+scene.backgroundBlurriness = 0.5;
+console.log("scen env: ", scene.environment)
 
 
 
@@ -66,6 +76,15 @@ window.addEventListener('resize', () => {
   // Update renderer
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+  composer.setSize(sizes.width, sizes.height)
+  composer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+
+  effectFXAA.uniforms["resolution"].value.set(
+    1 / window.innerWidth,
+    1 / window.innerHeight
+  );
 })
 
 /**
@@ -86,11 +105,56 @@ controls.enableDamping = true
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-  canvas: canvas
+  canvas: canvas,
+  antialias: true
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.toneMappingExposure = 2
 
+renderer.outputEncoding = THREE.sRGBEncoding
+
+
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+
+composer.addPass(renderPass);
+
+const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+outlinePass.edgeThickness = 0.5;
+outlinePass.edgeStrength = 100.0;
+outlinePass.edgeGlow = 0.0;
+outlinePass.visibleEdgeColor.set(0xff2200);
+outlinePass.hiddenEdgeColor.set(0xff2200);
+
+
+outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending
+//outlinePass.overlayMaterial.blending = THREE.CustomBlending
+composer.addPass(outlinePass);
+
+//shader
+let effectFXAA = new ShaderPass(FXAAShader);
+effectFXAA.uniforms["resolution"].value.set(
+  1 / window.innerWidth,
+  1 / window.innerHeight
+);
+effectFXAA.renderToScreen = true;
+composer.addPass(effectFXAA);
+
+
+const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader)
+composer.addPass(gammaCorrectionPass)
+
+
+// Raycaster
+const raycaster = new THREE.Raycaster()
+const mouse = new THREE.Vector2()
+
+window.addEventListener('mousemove', (event) => {
+  mouse.x = event.clientX / sizes.width * 2 - 1
+  mouse.y = -(event.clientY / sizes.height) * 2 + 1
+})
 /**
  * Animate
  */
@@ -108,8 +172,14 @@ export function returnScene() {
   return scene
 }
 
+let objects = []
+
 export function addToScene(object) {
   addGroup(object.scene, scene);
+
+  scene.traverse(function(object) {
+    if (object.isMesh) objects.push(object)
+  });
 }
 
 
@@ -118,6 +188,7 @@ function addGroup(object, parent) {
   object.children.forEach((child) => {
     if (child.isMesh) {
       addMesh(child, group);
+      outlinePass.selectedObjects.push(child)
     } else {
       addGroup(child, group);
     }
@@ -153,6 +224,12 @@ function addMesh(object, group) {
   }
 }
 
+export function highlight(node) {
+  outlinePass.selectedObjects = [node]
+
+}
+
+
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime()
@@ -161,8 +238,19 @@ const tick = () => {
   controls.update()
 
   // Render
-  renderer.render(scene, camera)
+  //renderer.render(scene, camera)
+  composer.render();
 
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(objects)
+
+  for (const object of objects) {
+    object.material.color.set('#ff0000')
+  }
+  if (intersects.length > 0) {
+    // Change the color of the first intersected object to blue
+    intersects[0].object.material.color.set('#0000ff');
+  }
 
   // Call tick again on the next frame
   window.requestAnimationFrame(tick)

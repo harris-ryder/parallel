@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useScene } from '../context/SceneContext';
-import { MeshStandardMaterial } from 'three';
 import * as THREE from 'three';
 
 export function Properties() {
@@ -21,7 +20,7 @@ export function Properties() {
   }, [selectedNode])
 
   useEffect(() => {
-    if (selectedNode) selectedNode.material = new THREE.MeshStandardMaterial({ color: color });
+    if (selectedNode && selectedNode.isMesh) selectedNode.material.color.set(color)
   }, [color])
 
   const nodePos = useMemo(() => {
