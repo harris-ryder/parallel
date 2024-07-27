@@ -11,13 +11,13 @@
 .scene-tree-drag {
   overflow: hidden;
   resize: vertical;
-  max-height: 400px;
+  height: 200px;
   padding-bottom: 18px;
   background-color: base.$colors-elevation2;
 }
 
 ::-webkit-resizer {
-  background: base.$colors-highlight2;
+  background: base.$colors-accent2;
   border: 3px solid base.$colors-elevation2;
   border-radius: 100px;
 }

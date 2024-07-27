@@ -277,6 +277,7 @@ const tick = () => {
   for (const object of objects) {
     if (object.material.userData.originalColor) {
       object.material.color.copy(object.material.userData.originalColor)
+      object.material.userData.originalColor = null
     }
 
   }

@@ -30,7 +30,7 @@ export function SceneProvider({ children }) {
 
 
 
-  document.addEventListener('click', () => {
+  document.addEventListener('mouseup', () => {
 
     if (event.target.closest('div')) {
       // Click happened inside a div, ignore it
