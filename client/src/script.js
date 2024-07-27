@@ -245,11 +245,18 @@ const tick = () => {
   const intersects = raycaster.intersectObjects(objects)
 
   for (const object of objects) {
-    object.material.color.set('#ff0000')
+    if (object.material.userData.originalColor) {
+      object.material.color.copy(object.material.userData.originalColor)
+    }
+
   }
+
   if (intersects.length > 0) {
-    // Change the color of the first intersected object to blue
-    intersects[0].object.material.color.set('#0000ff');
+    if (!intersects[0].object.material.userData.originalColor) {
+      intersects[0].object.material.userData.originalColor = intersects[0].object.material.color.clone()
+    }
+    intersects[0].object.material.color.set(0x1155ff);
+
   }
 
   // Call tick again on the next frame
