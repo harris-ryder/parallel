@@ -7,7 +7,6 @@ export function TreeNode({ scene }) {
 
   function toggleVisible(node) {
     setSelectedNode(node)
-    highlight(node)
 
   }
 

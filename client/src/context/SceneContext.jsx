@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react'
 import { returnArrayOfGeometries, loadPublicGLTFFile } from '../utils/fileLoader'
-import { addToScene, returnScene } from '../script'
+import { addToScene, returnScene, returnCurrentIntersect, highlight } from '../script'
 
 const SceneContext = React.createContext()
 
@@ -27,6 +27,28 @@ export function SceneProvider({ children }) {
     let newModels = await returnArrayOfGeometries(e)
     setModels((prevModels) => [...newModels, ...prevModels])
   }
+
+
+
+  document.addEventListener('click', () => {
+
+    if (event.target.closest('div')) {
+      // Click happened inside a div, ignore it
+      return;
+    }
+    console.log("before IF", returnCurrentIntersect())
+    if (returnCurrentIntersect() && returnCurrentIntersect().isMesh) {
+      let node = returnCurrentIntersect()
+      console.log("click mesh")
+      setSelectedNode(node)
+    } else {
+      console.log("clicking empty")
+      setSelectedNode(null)
+
+    }
+  })
+
+
 
   async function loadExampleModel() {
     try {
@@ -58,6 +80,11 @@ export function SceneProvider({ children }) {
   useEffect(() => {
     console.log("new scene: ", scene)
   }, [scene])
+
+  useEffect(() => {
+    if (selectedNode) highlight(selectedNode)
+    if (!selectedNode) highlight(null)
+  }, [selectedNode])
 
 
   return (

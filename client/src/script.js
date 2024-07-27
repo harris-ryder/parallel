@@ -55,6 +55,23 @@ scene.backgroundBlurriness = 0.5;
 console.log("scen env: ", scene.environment)
 
 
+// Materials
+function mixColors(hex1, hex2, weight = 0.5) {
+  // Create THREE.Color objects from hex values
+  const color1 = new THREE.Color(hex1);
+  const color2 = new THREE.Color(hex2);
+
+  // Create a new color to store the result
+  const mixedColor = new THREE.Color();
+
+  // Mix the colors
+  mixedColor.lerpColors(color1, color2, weight);
+
+  // Return the mixed color in hex format
+  return mixedColor.getHexString();
+}
+
+
 
 /**
  * Sizes
@@ -128,7 +145,6 @@ outlinePass.edgeGlow = 0.0;
 outlinePass.visibleEdgeColor.set(0xff2200);
 outlinePass.hiddenEdgeColor.set(0xff2200);
 
-
 outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending
 //outlinePass.overlayMaterial.blending = THREE.CustomBlending
 composer.addPass(outlinePass);
@@ -155,6 +171,12 @@ window.addEventListener('mousemove', (event) => {
   mouse.x = event.clientX / sizes.width * 2 - 1
   mouse.y = -(event.clientY / sizes.height) * 2 + 1
 })
+
+
+
+
+
+
 /**
  * Animate
  */
@@ -225,11 +247,18 @@ function addMesh(object, group) {
 }
 
 export function highlight(node) {
-  outlinePass.selectedObjects = [node]
+
+  if (node) outlinePass.selectedObjects = [node]
+  if (!node) outlinePass.selectedObjects = []
 
 }
 
+export function returnCurrentIntersect() {
+  return currentIntersect
+}
 
+let currentIntersect = null
+let selectedNode = null
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime()
@@ -244,6 +273,7 @@ const tick = () => {
   raycaster.setFromCamera(mouse, camera)
   const intersects = raycaster.intersectObjects(objects)
 
+
   for (const object of objects) {
     if (object.material.userData.originalColor) {
       object.material.color.copy(object.material.userData.originalColor)
@@ -252,12 +282,21 @@ const tick = () => {
   }
 
   if (intersects.length > 0) {
+    let originalColor = intersects[0].object.material.color.clone()
+    currentIntersect = intersects[0].object
     if (!intersects[0].object.material.userData.originalColor) {
-      intersects[0].object.material.userData.originalColor = intersects[0].object.material.color.clone()
+      intersects[0].object.material.userData.originalColor = originalColor
     }
-    intersects[0].object.material.color.set(0x1155ff);
-
+    const mixedHexColor = mixColors(0x0000ff, originalColor, 0.7);
+    intersects[0].object.material.color.set(`#${mixedHexColor}`);
+  } else {
+    currentIntersect = null
   }
+
+
+
+
+
 
   // Call tick again on the next frame
   window.requestAnimationFrame(tick)
