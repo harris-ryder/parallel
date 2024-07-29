@@ -1,306 +1,285 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import gsap from 'gsap'
-import GUI from 'lil-gui'
-import { MeshStandardMaterial } from 'three';
-import { DragControls } from 'three/addons/controls/DragControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader.js'
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import * as utils from './threeUtils.js';
 
-/**
- * Debug
- */
+let composer, outlinePass, currentIntersect, effectFXAA, control
+let camera, scene, raycaster, renderer, environmentMap, orbit, mouse, clock, canvas
+let paintMode = false
+let sceneMeshes = []
 
+init()
 
-const cubeTextureLoader = new THREE.CubeTextureLoader()
+function init() {
 
-/**
- * Base
- */
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color(0xffffff);
 
-// Scene
-const scene = new THREE.Scene()
-scene.background = new THREE.Color(0xffffff);
+  clock = new THREE.Clock()
 
-// AXIS HELPER
-const axesHelper = new THREE.AxesHelper(5);
-scene.add(axesHelper);
+  canvas = document.querySelector('canvas.webgl')
 
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000)
+  camera.position.x = 20
+  camera.position.y = 1
+  camera.position.z = 0
+  scene.add(camera)
 
-// Light
+  const light = new THREE.AmbientLight(0x404040, 5);
+  scene.add(light);
 
-const light = new THREE.AmbientLight(0x404040, 5);
-scene.add(light);
+  const cubeTextureLoader = new THREE.CubeTextureLoader()
+  environmentMap = cubeTextureLoader.load([
+    '/environmentMaps/0/px.png',
+    '/environmentMaps/0/nx.png',
+    '/environmentMaps/0/py.png',
+    '/environmentMaps/0/ny.png',
+    '/environmentMaps/0/pz.png',
+    '/environmentMaps/0/nz.png'
+  ])
 
-// Environment
-
-const environmentMap = cubeTextureLoader.load([
-  '/environmentMaps/0/px.png',
-  '/environmentMaps/0/nx.png',
-  '/environmentMaps/0/py.png',
-  '/environmentMaps/0/ny.png',
-  '/environmentMaps/0/pz.png',
-  '/environmentMaps/0/nz.png'
-])
-
-scene.environment = environmentMap
-scene.environmentIntensity = 3
-scene.backgroundBlurriness = 0.5;
-console.log("scen env: ", scene.environment)
+  scene.environment = environmentMap
+  scene.environmentIntensity = 3
+  scene.backgroundBlurriness = 0.5;
 
 
-// Materials
-function mixColors(hex1, hex2, weight = 0.5) {
-  // Create THREE.Color objects from hex values
-  const color1 = new THREE.Color(hex1);
-  const color2 = new THREE.Color(hex2);
+  renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+  })
 
-  // Create a new color to store the result
-  const mixedColor = new THREE.Color();
+  document.body.appendChild(renderer.domElement);
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 2
+  renderer.outputEncoding = THREE.sRGBEncoding
 
-  // Mix the colors
-  mixedColor.lerpColors(color1, color2, weight);
+  composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
 
-  // Return the mixed color in hex format
-  return mixedColor.getHexString();
+  outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+  outlinePass.edgeThickness = 0.5;
+  outlinePass.edgeStrength = 100.0;
+  outlinePass.edgeGlow = 0.0;
+  outlinePass.visibleEdgeColor.set(0xff2200);
+  outlinePass.hiddenEdgeColor.set(0xff2200);
+  outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending
+  composer.addPass(outlinePass);
+
+  effectFXAA = new ShaderPass(FXAAShader);
+  effectFXAA.uniforms["resolution"].value.set(
+    1 / window.innerWidth,
+    1 / window.innerHeight
+  );
+  effectFXAA.renderToScreen = true;
+  composer.addPass(effectFXAA);
+
+  const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader)
+  composer.addPass(gammaCorrectionPass)
+
+  control = new TransformControls(camera, renderer.domElement);
+  control.addEventListener('dragging-changed', toggleOrbit)
+  control.traverse((obj) => {
+    obj.isTransformControls = true
+  });
+  scene.add(control)
+
+  orbit = new OrbitControls(camera, canvas)
+  orbit.enableDamping = true
+
+  raycaster = new THREE.Raycaster()
+  mouse = new THREE.Vector2()
+
+  let axesHelper = new THREE.AxesHelper(5);
+  scene.add(axesHelper);
+
+  document.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('resize', onWindowResize);
 }
 
+function onMouseMove(event) {
 
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
-/**
- * Sizes
- */
-const sizes = {
-  width: window.innerWidth,
-  height: window.innerHeight
 }
 
-window.addEventListener('resize', () => {
-  // Update sizes
-  sizes.width = window.innerWidth
-  sizes.height = window.innerHeight
+function onWindowResize() {
 
-  // Update camera
-  camera.aspect = sizes.width / sizes.height
+  camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
 
-  // Update renderer
-  renderer.setSize(sizes.width, sizes.height)
+  renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-  composer.setSize(sizes.width, sizes.height)
+  composer.setSize(window.innerWidth, window.innerHeight)
   composer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
 
   effectFXAA.uniforms["resolution"].value.set(
     1 / window.innerWidth,
     1 / window.innerHeight
   );
-})
-
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 5000)
-camera.position.x = 500
-camera.position.y = 1
-camera.position.z = 500
-scene.add(camera)
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-  canvas: canvas,
-  antialias: true
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 2
-
-renderer.outputEncoding = THREE.sRGBEncoding
-
-
-const composer = new EffectComposer(renderer);
-const renderPass = new RenderPass(scene, camera);
-
-composer.addPass(renderPass);
-
-const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-outlinePass.edgeThickness = 0.5;
-outlinePass.edgeStrength = 100.0;
-outlinePass.edgeGlow = 0.0;
-outlinePass.visibleEdgeColor.set(0xff2200);
-outlinePass.hiddenEdgeColor.set(0xff2200);
-
-outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending
-//outlinePass.overlayMaterial.blending = THREE.CustomBlending
-composer.addPass(outlinePass);
-
-//shader
-let effectFXAA = new ShaderPass(FXAAShader);
-effectFXAA.uniforms["resolution"].value.set(
-  1 / window.innerWidth,
-  1 / window.innerHeight
-);
-effectFXAA.renderToScreen = true;
-composer.addPass(effectFXAA);
-
-
-const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader)
-composer.addPass(gammaCorrectionPass)
-
-
-// Raycaster
-const raycaster = new THREE.Raycaster()
-const mouse = new THREE.Vector2()
-
-window.addEventListener('mousemove', (event) => {
-  mouse.x = event.clientX / sizes.width * 2 - 1
-  mouse.y = -(event.clientY / sizes.height) * 2 + 1
-})
-
-
-
-
-
-
-/**
- * Animate
- */
-const clock = new THREE.Clock()
-
-export function updateNode(node) {
-  node.updateMatrixWorld
-  console.log("at script")
 }
 
 
-// REACT INTERACTIONS
+function toggleOrbit(event) {
+  orbit.enabled = !event.value;
+}
+
+
+function checkIntersectsAndHighlight() {
+
+  if (paintMode) return
+  raycaster.setFromCamera(mouse, camera)
+  let intersects
+  if (sceneMeshes) intersects = raycaster.intersectObjects(sceneMeshes)
+
+
+  for (const object of sceneMeshes) {
+    if (object.material.userData.originalColor) {
+      object.material.color.copy(object.material.userData.originalColor)
+      object.material.userData.originalColor = null
+    }
+  }
+
+  if (intersects.length > 0) {
+    let originalColor = intersects[0].object.material.color.clone()
+    currentIntersect = intersects[0].object
+
+    if (!currentIntersect.material.userData.originalColor) {
+      currentIntersect.material.userData.originalColor = originalColor
+    }
+    const mixedHexColor = utils.mixColors(0x0000ff, originalColor, 0.7);
+    currentIntersect.material.color.set(`#${mixedHexColor}`);
+  } else {
+    currentIntersect = null
+  }
+}
+
+
+const tick = () => {
+  const elapsedTime = clock.getElapsedTime()
+
+  orbit.update()
+  composer.render();
+  checkIntersectsAndHighlight()
+  window.requestAnimationFrame(tick)
+}
+tick()
+
+
+// EXPORTS
+export function activeControlTransform(node) {
+  orbit.enabled = true
+  control.attach(node)
+  paintMode = false
+}
+export function disableControlTransform() {
+  orbit.enabled = false
+  control.detach()
+  paintMode = true
+}
+
+export function updateNode(node) {
+  node.updateMatrixWorld
+}
+
 
 export function returnScene() {
   return scene
 }
 
-let objects = []
-
-export function addToScene(object) {
-  addGroup(object.scene, scene);
-
-  scene.traverse(function(object) {
-    if (object.isMesh) objects.push(object)
-  });
-}
-
-
-function addGroup(object, parent) {
-  let group = new THREE.Group()
-  object.children.forEach((child) => {
-    if (child.isMesh) {
-      addMesh(child, group);
-      outlinePass.selectedObjects.push(child)
-    } else {
-      addGroup(child, group);
-    }
-  });
-
-  parent.add(group)
-
-}
-
-
-function addMesh(object, group) {
-
-
-  if (object && object.isMesh) {
-    const worldPosition = new THREE.Vector3();
-    const worldRotation = new THREE.Quaternion();
-    const worldScale = new THREE.Vector3();
-
-    object.updateMatrixWorld(true);
-    object.getWorldPosition(worldPosition);
-    object.getWorldQuaternion(worldRotation);
-    object.getWorldScale(worldScale);
-
-    const newMesh = new THREE.Mesh(object.geometry, object.material);
-    newMesh.position.copy(worldPosition);
-    newMesh.quaternion.copy(worldRotation);
-    newMesh.scale.copy(worldScale);
-
-    newMesh.name = "no name"
-    if (object.name !== "") newMesh.name = object.name
-
-    group.add(newMesh);
-  }
-}
 
 export function highlight(node) {
 
-  if (node) outlinePass.selectedObjects = [node]
-  if (!node) outlinePass.selectedObjects = []
+  control.detach()
+  if (node) {
+    outlinePass.selectedObjects = [node]
+    control.attach(node)
+    control.setMode('translate');
 
+  } else if (!node) {
+    outlinePass.selectedObjects = []
+  }
+
+}
+
+export function addToScene(object) {
+
+  utils.addGroup(object.scene, scene)
+
+  scene.traverse(function(mesh) {
+    if (mesh.isMesh && mesh.type !== "TransformControlsPlane") sceneMeshes.push(mesh)
+  });
 }
 
 export function returnCurrentIntersect() {
   return currentIntersect
 }
 
-let currentIntersect = null
-let selectedNode = null
 
-const tick = () => {
-  const elapsedTime = clock.getElapsedTime()
-
-  // Update controls
-  controls.update()
-
-  // Render
-  //renderer.render(scene, camera)
-  composer.render();
+export function checkIntersectsAndPaint() {
 
   raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects)
+  let intersects
+  if (sceneMeshes) intersects = raycaster.intersectObjects(outlinePass.selectedObjects)
+  console.log("checking intersects", intersects)
+  if (intersects.length < 1) return
+  currentIntersect = intersects[0].object
+  let ctx = currentIntersect.userData.canvas
 
+  ctx.beginPath();
+  ctx.arc(intersects[0].uv.x * 300, (1 - intersects[0].uv.y) * 300, 1, 0, Math.PI * 2);  // Center (4, 4), radius 2
+  ctx.fillStyle = '#0000ff';
+  ctx.fill();
+  ctx.closePath();
 
-  for (const object of objects) {
-    if (object.material.userData.originalColor) {
-      object.material.color.copy(object.material.userData.originalColor)
-      object.material.userData.originalColor = null
-    }
-
-  }
-
-  if (intersects.length > 0) {
-    let originalColor = intersects[0].object.material.color.clone()
-    currentIntersect = intersects[0].object
-    if (!intersects[0].object.material.userData.originalColor) {
-      intersects[0].object.material.userData.originalColor = originalColor
-    }
-    const mixedHexColor = mixColors(0x0000ff, originalColor, 0.7);
-    intersects[0].object.material.color.set(`#${mixedHexColor}`);
-  } else {
-    currentIntersect = null
-  }
-
-
-
-
-
-
-  // Call tick again on the next frame
-  window.requestAnimationFrame(tick)
+  currentIntersect.material.map.needsUpdate = true;
 }
 
-tick()
+
+
+// OTHER
+
+
+window.addEventListener('keydown', function(event) {
+
+  switch (event.key) {
+
+    case 'q':
+      control.setSpace(control.space === 'local' ? 'world' : 'local');
+      break;
+
+    case 'Shift':
+      control.setTranslationSnap(1);
+      control.setRotationSnap(THREE.MathUtils.degToRad(15));
+      control.setScaleSnap(0.25);
+      break;
+
+    case 'g':
+      control.setMode('translate');
+      break;
+
+    case 'r':
+      control.setMode('rotate');
+      break;
+
+    case 's':
+      control.setMode('scale');
+      break;
+
+    case 'h':
+      control.traverse((obj) => {
+        obj.visible = !obj.visible
+      });
+      break;
+  }
+})

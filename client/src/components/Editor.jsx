@@ -5,6 +5,7 @@ import { TreeNode } from './TreeNode';
 import { SceneTree } from './SceneTree';
 import { Properties } from './Properties';
 import { ShareBar } from './ShareBar'
+import { Comments } from './Comments';
 
 export function Editor() {
   return (
@@ -12,7 +13,7 @@ export function Editor() {
       <ShareBar />
       <SceneTree />
       <Properties />
-
+      <Comments />
     </div>
   )
 }

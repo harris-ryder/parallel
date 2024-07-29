@@ -7,24 +7,34 @@
   background: base.$colors-elevation2;
   position: relative;
 
-  &::before {
-    content: "";
-    position: absolute;
-    top: -8px;
-    height: 1px;
-    left: 8px;
-    right: 8px;
-    background-color: base.$colors-accent2;
-  }
 }
 
 .properties {
   display: flex;
   flex-direction: column;
-  padding: 8px;
   background: base.$colors-elevation2;
+  padding: 0px 8px;
   gap: 8px;
+}
 
+.properties-drag {
+  position: relative;
+  overflow: hidden;
+  resize: vertical;
+  height: 200px;
+
+  background-color: base.$colors-elevation2;
+
+
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: 0px;
+    height: 16px;
+    left: 8px;
+    right: 8px;
+    background-color: base.$colors-elevation2;
+  }
 }
 
 .color-selector {

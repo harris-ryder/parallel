@@ -3,10 +3,10 @@ import { useScene } from '../context/SceneContext';
 import { highlight } from '../script.js'
 
 export function TreeNode({ scene }) {
-  const { setModels, sceneCopy, setScene, setSelectedNode, selectedNode } = useScene();
+  const { setModels, sceneCopy, setScene, changeSelectedNode, selectedNode } = useScene();
 
   function toggleVisible(node) {
-    setSelectedNode(node)
+    changeSelectedNode(node)
 
   }
 
